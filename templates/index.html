@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Verificare Facturi</title>
+</head>
+<body>
+    <h1>Încarcă PDF</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="application/pdf" required>
+        <button type="submit">Procesează</button>
+    </form>
+
+    {% if factura %}
+    <h2>Rezultat</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Denumire Furnizor</th>
+                <th>Denumire Material</th>
+                <th>Cantitate</th>
+                <th>Pret unitar</th>
+                <th>Pret total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in factura %}
+            <tr>
+                <td>{{ item.Denumire_Furnizor }}</td>
+                <td>{{ item.Denumire_Material }}</td>
+                <td>{{ item.Cantitate }}</td>
+                <td>{{ item.Pret_unitar }}</td>
+                <td>{{ item.Pret_total }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</body>
+</html>
