@@ -1,40 +1,93 @@
 <!doctype html>
-<html lang="en">
+<html lang="ro">
 <head>
-    <meta charset="utf-8">
-    <title>Verificare Facturi</title>
+  <meta charset="utf-8">
+  <title>Verificare Facturi</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    h1 { margin-bottom: 12px; }
+    form { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+    button { padding: 8px 14px; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #d0d0d0; padding: 8px; text-align: left; }
+    th { background: #f6f6f6; }
+    .mono { white-space: pre-wrap; background:#fafafa; border:1px solid #eee; padding:10px; margin-top:10px; }
+    .err { color: #a00; margin-top: 10px; }
+  </style>
 </head>
 <body>
-    <h1>Încarcă PDF</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="pdf" accept="application/pdf" required>
-        <button type="submit">Procesează</button>
-    </form>
+  <h1>Încarcă PDF</h1>
 
-    {% if factura %}
-    <h2>Rezultat</h2>
-    <table border="1">
-        <thead>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <!-- cheie 'file' ca în backend -->
+    <input type="file" name="file" accept="application/pdf" required>
+    <button type="submit">Procesează</button>
+  </form>
+
+  <div id="status"></div>
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusEl.textContent = 'Se procesează...';
+      resultEl.innerHTML = '';
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          statusEl.innerHTML = `<div class="err">${data.error || 'Eroare necunoscută.'}</div>`;
+          return;
+        }
+
+        statusEl.textContent = 'Gata ✅';
+
+        const rows = Array.isArray(data.factura) ? data.factura : [];
+        if (!rows.length) {
+          resultEl.innerHTML = '<div class="mono">Nu s-au găsit linii de factură.\n' + JSON.stringify(data, null, 2) + '</div>';
+          return;
+        }
+
+        let html = `<table>
+          <thead>
             <tr>
-                <th>Denumire Furnizor</th>
-                <th>Denumire Material</th>
-                <th>Cantitate</th>
-                <th>Pret unitar</th>
-                <th>Pret total</th>
+              <th>Denumire Furnizor</th>
+              <th>Denumire Material</th>
+              <th>Cantitate</th>
+              <th>Preț unitar</th>
+              <th>Preț total</th>
             </tr>
-        </thead>
-        <tbody>
-            {% for item in factura %}
-            <tr>
-                <td>{{ item.Denumire_Furnizor }}</td>
-                <td>{{ item.Denumire_Material }}</td>
-                <td>{{ item.Cantitate }}</td>
-                <td>{{ item.Pret_unitar }}</td>
-                <td>{{ item.Pret_total }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
+          </thead>
+          <tbody>`;
+
+        for (const item of rows) {
+          html += `<tr>
+            <td>${item.Denumire_Furnizor ?? ''}</td>
+            <td>${item.Denumire_Material ?? ''}</td>
+            <td>${item.Cantitate ?? 0}</td>
+            <td>${item.Pret_unitar ?? 0}</td>
+            <td>${item.Pret_total ?? 0}</td>
+          </tr>`;
+        }
+        html += '</tbody></table>';
+
+        // JSON brut pentru debugging
+        html += `<div class="mono">${JSON.stringify(data, null, 2)}</div>`;
+        resultEl.innerHTML = html;
+
+      } catch (err) {
+        console.error(err);
+        statusEl.innerHTML = '<div class="err">Eroare rețea sau server.</div>';
+      }
+    });
+  </script>
 </body>
 </html>
